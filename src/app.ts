@@ -1,5 +1,5 @@
 import { HttpResponse } from 'uWebSockets.js';
-import { Lambda } from 'aws-sdk';
+import { LambdaClientConfig } from '@aws-sdk/client-lambda';
 import { Server } from './server';
 
 const Pusher = require('pusher');
@@ -45,7 +45,7 @@ export interface WebhookInterface {
     lambda: {
         async?: boolean;
         region?: string;
-        client_options?: Lambda.Types.ClientConfiguration,
+        client_options?: LambdaClientConfig,
     };
 }
 

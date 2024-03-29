@@ -6,7 +6,7 @@ import { JobData } from '../webhook-sender';
 import { Log } from '../log';
 import { QueueInterface } from './queue-interface';
 import { Server } from '../server';
-import { SQS } from 'aws-sdk';
+import { SQS } from '@aws-sdk/client-sqs';
 import { v4 as uuidv4 } from 'uuid';
 
 export class SqsQueueDriver implements QueueInterface {
@@ -120,7 +120,6 @@ export class SqsQueueDriver implements QueueInterface {
         let sqsOptions = this.server.options.queue.sqs;
 
         return new SQS({
-            apiVersion: '2012-11-05',
             region: sqsOptions.region || 'us-east-1',
             endpoint: sqsOptions.endpoint,
             ...sqsOptions.clientOptions,

@@ -1,8 +1,7 @@
 import { App } from '../app';
-import { AttributeMap } from 'aws-sdk/clients/dynamodb';
+import { AttributeValue, DynamoDB } from '@aws-sdk/client-dynamodb';
 import { BaseAppManager } from './base-app-manager';
 import { boolean } from 'boolean';
-import { DynamoDB } from 'aws-sdk';
 import { Log } from '../log';
 import { Server } from '../server';
 
@@ -19,7 +18,6 @@ export class DynamoDbAppManager extends BaseAppManager {
         super();
 
         this.dynamodb = new DynamoDB({
-            apiVersion: '2012-08-10',
             region: server.options.appManager.dynamodb.region,
             endpoint: server.options.appManager.dynamodb.endpoint,
         });
@@ -94,7 +92,7 @@ export class DynamoDbAppManager extends BaseAppManager {
     /**
      * Transform the marshalled item to a key-value pair.
      */
-    protected unmarshallItem(item: AttributeMap): { [key: string]: any; } {
+    protected unmarshallItem(item: Record<string, AttributeValue>): { [key: string]: any; } {
         let appObject = DynamoDB.Converter.unmarshall(item);
 
         // Making sure EnableClientMessages is boolean.

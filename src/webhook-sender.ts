@@ -3,7 +3,7 @@ import async from 'async';
 import axios from 'axios';
 import { createHmac } from 'crypto';
 import { Utils } from './utils';
-import { Lambda } from 'aws-sdk';
+import { Lambda } from '@aws-sdk/client-lambda';
 import { Log } from './log';
 import { Server } from './server';
 
@@ -107,7 +107,7 @@ export class WebhookSender {
                         'Content-Type': 'application/json',
                         'User-Agent': `SoketiWebhooksAxiosClient/1.0 (Process: ${this.server.options.instance.process_id})`,
                         // We specifically merge in the custom headers here so the headers below cannot be overwritten
-                        ...webhook.headers ?? {},
+                        ...(webhook.headers ?? {}),
                         'X-Pusher-Key': appKey,
                         'X-Pusher-Signature': pusherSignature,
                     };
@@ -136,7 +136,6 @@ export class WebhookSender {
                         };
 
                         let lambda = new Lambda({
-                            apiVersion: '2015-03-31',
                             region: webhook.lambda.region || 'us-east-1',
                             ...(webhook.lambda.client_options || {}),
                         });

@@ -1,7 +1,6 @@
-const AWS = require('aws-sdk');
+const { DynamoDB } = require('@aws-sdk/client-dynamodb');
 
-let ddb = new AWS.DynamoDB({
-    apiVersion: '2012-08-10',
+let ddb = new DynamoDB({
     region: 'us-east-1',
     endpoint: `http://${process.env.DYNAMODB_URL || '127.0.0.1:8000'}`,
 });
@@ -37,7 +36,7 @@ let createRecord = () => {
         },
     };
 
-    return ddb.putItem(params).promise().then(() => {
+    return ddb.putItem(params).then(() => {
         console.log('Record created.');
     }).catch(err => {
         console.error(err);
@@ -45,7 +44,7 @@ let createRecord = () => {
     });
 };
 
-ddb.describeTable({ TableName: 'apps' }).promise().then((result) => {
+ddb.describeTable({ TableName: 'apps' }).then((result) => {
     createRecord();
 }).catch(err => {
     console.error(err);
@@ -87,7 +86,7 @@ ddb.describeTable({ TableName: 'apps' }).promise().then((result) => {
             ReadCapacityUnits: 100,
             WriteCapacityUnits: 100,
         },
-    }).promise().then(() => {
+    }).then(() => {
         console.log('Table created.');
     }).then(createRecord).catch((err) => {
         console.error(err);
