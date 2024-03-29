@@ -81,6 +81,7 @@ export class Cli {
         DB_POSTGRES_USERNAME: 'database.postgres.user',
         DB_POSTGRES_PASSWORD: 'database.postgres.password',
         DB_POSTGRES_DATABASE: 'database.postgres.database',
+        DB_POSTGRES_SSL: 'database.postgres.ssl',
         DB_REDIS_HOST: 'database.redis.host',
         DB_REDIS_PORT: 'database.redis.port',
         DB_REDIS_DB: 'database.redis.db',
