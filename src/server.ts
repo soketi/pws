@@ -22,6 +22,7 @@ import { WsHandler } from './ws-handler';
 const Discover = require('node-discover');
 const queryString = require('query-string');
 const uWS = require('uWebSockets.js');
+const version = require('../package.json').version;
 
 export class Server {
     /**
@@ -384,6 +385,7 @@ export class Server {
                                     this.serverProcess = serverProcess;
 
                                     Log.successTitle('🎉 Server is up and running!');
+                                    Log.successTitle(`⏱ Soketi Version is ${version}!`); 
                                     Log.successTitle(`📡 The Websockets server is available at 127.0.0.1:${this.options.port}`);
                                     Log.successTitle(`🔗 The HTTP API server is available at http://127.0.0.1:${this.options.port}`);
                                     Log.successTitle(`🎊 The /usage endpoint is available on port ${this.options.metrics.port}.`);

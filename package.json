@@ -1,6 +1,6 @@
 {
   "name": "@soketi/soketi",
-  "version": "0.0.0-dev",
+  "version": "1.7.0",
   "description": "Just another simple, fast, and resilient open-source WebSockets server.",
   "repository": {
     "type": "git",
