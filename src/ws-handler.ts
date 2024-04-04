@@ -742,13 +742,13 @@ export class WsHandler {
      * Return a boolean wether the user can connect or not.
      */
     protected checkAppConnectionLimit(ws: WebSocket): Promise<boolean> {
+        let maxConnections = parseInt(ws.app.maxConnections as string) || -1;
+
+        if (maxConnections < 0) {
+            return Promise.resolve(true);
+        }
+
         return this.server.adapter.getSocketsCount(ws.app.id).then(wsCount => {
-            let maxConnections = parseInt(ws.app.maxConnections as string) || -1;
-
-            if (maxConnections < 0) {
-                return true;
-            }
-
             return wsCount + 1 <= maxConnections;
         }).catch(err => {
             Log.error(err);
