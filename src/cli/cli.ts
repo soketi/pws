@@ -21,6 +21,7 @@ export class Cli {
         ADAPTER_REDIS_REQUESTS_TIMEOUT: 'adapter.redis.requestsTimeout',
         ADAPTER_REDIS_SUB_OPTIONS: 'adapter.redis.redisSubOptions',
         ADAPTER_REDIS_PUB_OPTIONS: 'adapter.redis.redisPubOptions',
+        ADAPTER_REDIS_USE_INCREMENTING_KEYS: 'adapter.redis.useIncrementingKeys',
         ADAPTER_NATS_PREFIX: 'adapter.nats.prefix',
         ADAPTER_NATS_SERVERS: 'adapter.nats.servers',
         ADAPTER_NATS_USER: 'adapter.nats.user',

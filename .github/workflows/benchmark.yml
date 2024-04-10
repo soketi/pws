@@ -168,6 +168,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: fake-secret
           SOKETI_DB_MYSQL_USERNAME: root
           SOKETI_DB_MYSQL_PASSWORD: root
+          SOKETI_ADAPTER_REDIS_USE_INCREMENTING_KEYS: true
 
       - name: Run Soketi (port 6002)
         if: "matrix.adapter == 'redis' || matrix.adapter == 'cluster' || matrix.adapter == 'nats'"

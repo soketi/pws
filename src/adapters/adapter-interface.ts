@@ -36,6 +36,11 @@ export interface AdapterInterface {
     addSocket(appId: string, ws: WebSocket): Promise<boolean>;
 
     /**
+     * Update a socket in the namespace.
+     */
+    updateSocket(appId: string, ws: WebSocket): Promise<boolean>;
+
+    /**
      * Remove a socket from the namespace.
      */
     removeSocket(appId: string, wsId: string): Promise<boolean>;

@@ -381,7 +381,7 @@ export class WsHandler {
             }
 
             // Make sure to update the socket after new data was pushed in.
-            this.server.adapter.addSocket(ws.app.id, ws);
+            this.server.adapter.updateSocket(ws.app.id, ws);
 
             // If the connection freshly joined, send the webhook:
             if (response.channelConnections === 1) {
@@ -411,7 +411,7 @@ export class WsHandler {
                 ws.presence.set(channel, response.member);
 
                 // Make sure to update the socket after new data was pushed in.
-                this.server.adapter.addSocket(ws.app.id, ws);
+                this.server.adapter.updateSocket(ws.app.id, ws);
 
                 // If the member already exists in the channel, don't resend the member_added event.
                 if (!members.has(user_id as string)) {
@@ -478,7 +478,7 @@ export class WsHandler {
                     ws.presence.delete(channel);
 
                     // Make sure to update the socket after new data was pushed in.
-                    this.server.adapter.addSocket(ws.app.id, ws);
+                    this.server.adapter.updateSocket(ws.app.id, ws);
 
                     this.server.adapter.getChannelMembers(ws.app.id, channel, false).then(members => {
                         if (!members.has(member.user_id as string)) {
@@ -500,7 +500,7 @@ export class WsHandler {
                 // Make sure to update the socket after new data was pushed in,
                 // but only if the user is not closing the connection.
                 if (!closing) {
-                    this.server.adapter.addSocket(ws.app.id, ws);
+                    this.server.adapter.updateSocket(ws.app.id, ws);
                 }
 
                 if (response.remainingConnections === 0) {
@@ -681,7 +681,7 @@ export class WsHandler {
                 clearTimeout(ws.userAuthenticationTimeout);
             }
 
-            this.server.adapter.addSocket(ws.app.id, ws);
+            this.server.adapter.updateSocket(ws.app.id, ws);
 
             this.server.adapter.addUser(ws).then(() => {
                 ws.sendJson({
@@ -742,13 +742,13 @@ export class WsHandler {
      * Return a boolean wether the user can connect or not.
      */
     protected checkAppConnectionLimit(ws: WebSocket): Promise<boolean> {
+        let maxConnections = parseInt(ws.app.maxConnections as string) || -1;
+
+        if (maxConnections < 0) {
+            return Promise.resolve(true);
+        }
+
         return this.server.adapter.getSocketsCount(ws.app.id).then(wsCount => {
-            let maxConnections = parseInt(ws.app.maxConnections as string) || -1;
-
-            if (maxConnections < 0) {
-                return true;
-            }
-
             return wsCount + 1 <= maxConnections;
         }).catch(err => {
             Log.error(err);

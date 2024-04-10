@@ -40,6 +40,7 @@ export class Server {
                     //
                 },
                 clusterMode: false,
+                useIncrementingKeys: false,
             },
             cluster: {
                 requestsTimeout: 5_000,

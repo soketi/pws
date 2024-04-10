@@ -40,22 +40,32 @@ jobs:
             rate_limiter: local
             queue_driver: sync
             cache_driver: memory
+            incrementing_keys: false
           - adapter: local
             rate_limiter: local
             queue_driver: sqs
             cache_driver: memory
+            incrementing_keys: false
           - adapter: cluster
             rate_limiter: cluster
             queue_driver: sync
             cache_driver: redis
+            incrementing_keys: false
           - adapter: redis
             rate_limiter: redis
             queue_driver: redis
             cache_driver: redis
+            incrementing_keys: true
+          - adapter: redis
+            rate_limiter: redis
+            queue_driver: redis
+            cache_driver: redis
+            incrementing_keys: false
           - adapter: nats
             rate_limiter: redis
             queue_driver: sync
             cache_driver: redis
+            incrementing_keys: false
 
     name: Node.js ${{ matrix.node }} (adapter:${{ matrix.adapter }} manager:${{ matrix.app_manager }} ratelimiter:${{ matrix.rate_limiter }} queue:${{ matrix.queue_driver }})
 
@@ -135,6 +145,7 @@ jobs:
           TEST_MYSQL_USER: root
           TEST_MYSQL_PASSWORD: root
           TEST_SQS_URL: http://localhost:4566/000000000000/test.fifo
+          TEST_ADAPTER_REDIS_USE_INCREMENTING_KEYS: ${{ matrix.incrementing_keys }}
           AWS_ACCESS_KEY_ID: fake-id
           AWS_SECRET_ACCESS_KEY: fake-secret
 

@@ -3,6 +3,7 @@ import { HorizontalAdapter, PubsubBroadcastedMessage } from './horizontal-adapte
 import { Log } from '../log';
 import Redis, { Cluster, ClusterOptions, RedisOptions } from 'ioredis';
 import { Server } from '../server';
+import { WebSocket } from 'uWebSockets.js';
 
 export class RedisAdapter extends HorizontalAdapter {
     /**
@@ -19,6 +20,10 @@ export class RedisAdapter extends HorizontalAdapter {
      * The publishing client.
      */
     protected pubClient: Redis|Cluster;
+
+    protected syncIntervals: {
+        [appId: string]: NodeJS.Timeout;
+    } = {};
 
     /**
      * Initialize the adapter.
@@ -120,6 +125,24 @@ export class RedisAdapter extends HorizontalAdapter {
             return;
         }
 
+        // Experimental: We have a continuous sync of the number of connections
+        // for a specific App ID. This allows us to get in sync the total number of
+        // connections without screwing up in case the increment/decrement operations
+        // decide to flop and not be in sync.
+        // The value is randomly selected at runtime, between 10s and 60s, permanent.
+        // We can write this check in here as it seems like we received a message from other node,
+        // so the number of subscribers to PubSub is not 0.
+        if (
+            this.server.options.adapter.redis.useIncrementingKeys
+            && !this.syncIntervals[appId]
+        ) {
+            this.syncIntervals[appId] = setInterval(() => {
+                super.getSocketsCount(appId).then((socketsCount) => {
+                    this.pubClient.set(`app:${appId}:connections_count`, socketsCount);
+                });
+            }, Math.floor(Math.random() * (60 - 10 + 1) + 10) * 1e3);
+        }
+
         super.sendLocally(appId, channel, data, exceptingId);
     }
 
@@ -173,11 +196,114 @@ export class RedisAdapter extends HorizontalAdapter {
      * Clear the connections.
      */
     disconnect(): Promise<void> {
-        return Promise.all([
+        return Promise.allSettled([
             this.subClient.quit(),
             this.pubClient.quit(),
+            ...(Object.keys(this.syncIntervals).map(key => new Promise<void>(resolve => {
+                clearInterval(this.syncIntervals[key]);
+                delete this.syncIntervals[key];
+                resolve();
+            })) || []),
         ]).then(() => {
             //
+        });
+    }
+
+    /**
+     * Get total sockets count.
+     */
+    async getSocketsCount(appId: string, onlyLocal?: boolean): Promise<number> {
+        if (onlyLocal) {
+            return super.getSocketsCount(appId, onlyLocal);
+        }
+
+        // Experimental: this will take a value of an incremented field
+        // from Redis, whose increment/decrement values (or get) are all O(1)
+        // This will perform better than O(N+M) that would require to iterate over
+        // the list of all sockets and count them from each node.
+        if (this.server.options.adapter.redis.useIncrementingKeys) {
+            return new Promise((resolve, reject) => {
+                this.pubClient.get(`app:${appId}:connections_count`).then((socketsCount) => {
+                    return resolve(parseInt(socketsCount, 10) || 0);
+                });
+            });
+        }
+
+        return super.getSocketsCount(appId, onlyLocal);
+    }
+
+    /**
+     * Get a given channel's total sockets count.
+     */
+    async getChannelSocketsCount(appId: string, channel: string, onlyLocal?: boolean): Promise<number> {
+        if (onlyLocal) {
+            return super.getChannelSocketsCount(appId, channel, onlyLocal);
+        }
+
+        // Experimental: this will take a value of an incremented field
+        // from Redis, whose increment/decrement values (or get) are all O(1)
+        // This will perform better than O(N+M) that would require to iterate over
+        // the list of all sockets and count them from each node.
+        if (this.server.options.adapter.redis.useIncrementingKeys) {
+            return new Promise((resolve, reject) => {
+                this.pubClient.get(`app:${appId}:channel:${channel}:subscriptions_count`).then(count => {
+                    return resolve(parseInt(count, 10) || 0);
+                });
+            });
+        }
+
+        return super.getChannelSocketsCount(appId, channel, onlyLocal);
+    }
+
+    /**
+     * Add a new socket to the namespace.
+     */
+    async addSocket(appId: string, ws: WebSocket): Promise<boolean> {
+        return super.addSocket(appId, ws).then((added) => {
+            if (this.server.options.adapter.redis.useIncrementingKeys) {
+                this.pubClient.incr(`app:${appId}:connections_count`);
+            }
+
+            return added;
+        });
+    }
+
+    /**
+     * Remove a socket from the namespace.
+     */
+    async removeSocket(appId: string, wsId: string): Promise<boolean> {
+        return super.removeSocket(appId, wsId).then((removed) => {
+            if (this.server.options.adapter.redis.useIncrementingKeys) {
+                this.pubClient.decr(`app:${appId}:connections_count`);
+            }
+
+            return removed;
+        });
+    }
+
+    /**
+     * Add a socket ID to the channel identifier.
+     * Return the total number of connections after the connection.
+     */
+    async addToChannel(appId: string, channel: string, ws: WebSocket): Promise<number> {
+        return super.addToChannel(appId, channel, ws).then((count) => {
+            if (this.server.options.adapter.redis.useIncrementingKeys) {
+                return this.pubClient.incr(`app:${appId}:channel:${channel}:subscriptions_count`);
+            }
+
+            return count;
+        });
+    }
+
+    /**
+     * Remove a socket ID from the channel identifier.
+     * Return the total number of connections remaining to the channel.
+     */
+    async removeFromChannel(appId: string, channel: string|string[], wsId: string): Promise<number|void> {
+        return super.removeFromChannel(appId, channel, wsId).then(() => {
+            if (this.server.options.adapter.redis.useIncrementingKeys) {
+                this.pubClient.decr(`app:${appId}:channel:${channel}:subscriptions_count`);
+            }
         });
     }
 }

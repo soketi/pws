@@ -43,6 +43,7 @@ export interface Options {
             redisPubOptions: any;
             redisSubOptions: any;
             clusterMode: boolean;
+            useIncrementingKeys: boolean;
         };
         cluster: {
             requestsTimeout: 5_000,

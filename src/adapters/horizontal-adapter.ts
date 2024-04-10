@@ -525,34 +525,6 @@ export abstract class HorizontalAdapter extends LocalAdapter {
     }
 
     /**
-     * Check if a given connection ID exists in a channel.
-     */
-    async isInChannel(appId: string, channel: string, wsId: string, onlyLocal?: boolean): Promise<boolean> {
-        return new Promise((resolve, reject) => {
-            super.isInChannel(appId, channel, wsId).then(existsLocally => {
-                if (onlyLocal || existsLocally) {
-                    return resolve(existsLocally);
-                }
-
-                this.getNumSub().then(numSub => {
-                    if (numSub <= 1) {
-                        return resolve(existsLocally);
-                    }
-
-                    return this.sendRequest(
-                        appId,
-                        RequestType.SOCKET_EXISTS_IN_CHANNEL,
-                        resolve,
-                        reject,
-                        { numSub },
-                        { opts: { channel, wsId } },
-                    );
-                });
-            });
-        });
-    }
-
-    /**
      * Listen for requests coming from other nodes.
      */
     protected onRequest(channel: string, msg: string): void {
@@ -648,14 +620,6 @@ export abstract class HorizontalAdapter extends LocalAdapter {
                 this.processRequestFromAnotherInstance(request, () => {
                     return super.getChannelSocketsCount(appId, request.opts.channel).then(localCount => {
                         return { totalCount: localCount };
-                    });
-                });
-                break;
-
-            case RequestType.SOCKET_EXISTS_IN_CHANNEL:
-                this.processRequestFromAnotherInstance(request, () => {
-                    return super.isInChannel(appId, request.opts.channel, request.opts.wsId).then(existsLocally => {
-                        return { exists: existsLocally };
                     });
                 });
                 break;

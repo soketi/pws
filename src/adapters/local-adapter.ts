@@ -53,6 +53,13 @@ export class LocalAdapter implements AdapterInterface {
     }
 
     /**
+     * Update a socket in the namespace.
+     */
+    async updateSocket(appId: string, ws: WebSocket): Promise<boolean> {
+        return this.getNamespace(appId).addSocket(ws);
+    }
+
+    /**
      * Remove a socket from the namespace.
      */
     async removeSocket(appId: string, wsId: string): Promise<boolean> {

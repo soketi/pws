@@ -67,6 +67,7 @@ export class Utils {
             'database.postgres.database': process.env.TEST_POSTGRES_DATABASE || 'testing',
             'queue.sqs.queueUrl': process.env.TEST_SQS_URL || 'http://localhost:4566/000000000000/test.fifo',
             'debug': process.env.TEST_DEBUG || false,
+            'adapter.redis.useIncrementingKeys': process.env.TEST_ADAPTER_REDIS_USE_INCREMENTING_KEYS || false,
             'shutdownGracePeriod': 1_000,
         };
 

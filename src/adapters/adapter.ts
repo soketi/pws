@@ -61,6 +61,13 @@ export class Adapter implements AdapterInterface {
     }
 
     /**
+     * Update a socket in the namespace.
+     */
+    async updateSocket(appId: string, ws: WebSocket): Promise<boolean> {
+        return this.driver.updateSocket(appId, ws);
+    }
+
+    /**
      * Remove a socket from the namespace.
      */
     async removeSocket(appId: string, wsId: string): Promise<boolean> {
