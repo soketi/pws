@@ -1,4 +1,4 @@
-ARG VERSION=lts
+ARG VERSION=18
 
 FROM --platform=$BUILDPLATFORM node:$VERSION-alpine as build
 
