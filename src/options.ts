@@ -193,5 +193,6 @@ export interface Options {
             enabled: boolean;
             duration: number;
         };
+        maxRetries: number;
     };
 }

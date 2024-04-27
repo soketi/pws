@@ -129,6 +129,7 @@ export class Cli {
         USER_AUTHENTICATION_TIMEOUT: 'userAuthenticationTimeout',
         WEBHOOKS_BATCHING: 'webhooks.batching.enabled',
         WEBHOOKS_BATCHING_DURATION: 'webhooks.batching.duration',
+        WEBHOOKS_MAX_RETRIES: 'webhooks.maxRetries',
     };
 
     /**
