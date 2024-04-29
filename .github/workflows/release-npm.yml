@@ -14,14 +14,14 @@ jobs:
     name: Publish to NPM
 
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v4.1.4
 
-      - uses: actions/setup-node@v3.8.1
+      - uses: actions/setup-node@v4.0.2
         name: Installing Node.js v16.x
         with:
           node-version: 16.x
 
-      - uses: actions/cache@v3.3.2
+      - uses: actions/cache@v4.0.2
         name: Cache npm dependencies
         with:
           path: node_modules
