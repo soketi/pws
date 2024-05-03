@@ -47,7 +47,7 @@
     "sqs-consumer": "^5.7.0",
     "uuid": "^8.3.2",
     "uWebSockets.js": "https://github.com/uNetworking/uWebSockets.js.git#v20.10.0",
-    "yargs": "^17.5.1"
+    "yargs": "^17.7.2"
   },
   "devDependencies": {
     "@babel/plugin-proposal-decorators": "^7.18.10",
