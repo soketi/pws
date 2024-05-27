@@ -60,9 +60,9 @@ jobs:
     name: Node.js ${{ matrix.node }} (adapter:${{ matrix.adapter }} manager:${{ matrix.app_manager }} ratelimiter:${{ matrix.rate_limiter }} queue:${{ matrix.queue_driver }})
 
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v4.1.6
 
-      - uses: actions/setup-node@v3.8.1
+      - uses: actions/setup-node@v4.0.2
         name: Setup Node.js v${{ matrix.node }}
         with:
           node-version: ${{ matrix.node }}
@@ -138,7 +138,7 @@ jobs:
           AWS_ACCESS_KEY_ID: fake-id
           AWS_SECRET_ACCESS_KEY: fake-secret
 
-      - uses: codecov/codecov-action@v3.1.4
+      - uses: codecov/codecov-action@v4.4.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
