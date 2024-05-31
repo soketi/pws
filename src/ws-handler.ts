@@ -205,6 +205,8 @@ export class WsHandler {
             Log.websocket({ ws, code, message });
         }
 
+        ws.code = code;
+
         // If code 4200 (reconnect immediately) is called, it means the `closeAllLocalSockets()` was called.
         if (code !== 4200) {
             this.evictSocketFromMemory(ws);
@@ -218,7 +220,11 @@ export class WsHandler {
         return this.unsubscribeFromAllChannels(ws, true).then(() => {
             if (ws.app) {
                 this.server.adapter.removeSocket(ws.app.id, ws.id);
-                this.server.metricsManager.markDisconnection(ws);
+
+                // Do not decrement connection count when code is 4003 (app disabled) and 4100 (max connection exceeded). 
+                if (ws.code !== 4003 && ws.code !== 4100) {
+                    this.server.metricsManager.markDisconnection(ws);
+                }
             }
 
             this.clearTimeout(ws);
