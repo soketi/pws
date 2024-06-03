@@ -29,11 +29,11 @@ jobs:
     name: Tag Alpine Commit (node:${{ matrix.node }})
 
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v4.1.6
 
       - name: Docker meta
         id: docker_meta
-        uses: docker/metadata-action@v5.0.0
+        uses: docker/metadata-action@v5.5.1
         with:
           images: quay.io/soketi/soketi
           tags: |
@@ -91,11 +91,11 @@ jobs:
     name: Tag Distroless Commit (node:${{ matrix.node }})
 
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v4.1.6
 
       - name: Docker meta
         id: docker_meta
-        uses: docker/metadata-action@v5.0.0
+        uses: docker/metadata-action@v5.5.1
         with:
           images: quay.io/soketi/soketi
           tags: |
@@ -153,11 +153,11 @@ jobs:
     name: Tag Debian Commit (node:${{ matrix.node }})
 
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v4.1.6
 
       - name: Docker meta
         id: docker_meta
-        uses: docker/metadata-action@v5.0.0
+        uses: docker/metadata-action@v5.5.1
         with:
           images: quay.io/soketi/soketi
           tags: |
