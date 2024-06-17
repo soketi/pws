@@ -55,14 +55,14 @@ jobs:
     name: Node.js ${{ matrix.node }} (adapter:${{ matrix.adapter }} manager:${{ matrix.app_manager }} ratelimiter:${{ matrix.rate_limiter }} queue:${{ matrix.queue_driver }})
 
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v4.1.7
 
-      - uses: actions/setup-node@v3.8.1
+      - uses: actions/setup-node@v4.0.2
         name: Installing Node.js v${{ matrix.node }}
         with:
           node-version: ${{ matrix.node }}
 
-      - uses: actions/cache@v3.3.2
+      - uses: actions/cache@v4.0.2
         name: Cache npm dependencies
         with:
           path: node_modules
@@ -77,13 +77,13 @@ jobs:
           npm run build
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@2.26.0
+        uses: shivammathur/setup-php@2.30.5
         with:
           php-version: "8.0"
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, yaml
           coverage: pcov
 
-      - uses: actions/cache@v3.3.2
+      - uses: actions/cache@v4.0.2
         name: Cache Composer dependencies
         with:
           path: ~/.composer/cache/files
