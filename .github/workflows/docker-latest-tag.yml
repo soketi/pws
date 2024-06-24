@@ -29,11 +29,11 @@ jobs:
     name: Tag Latest Alpine (node:${{ matrix.node }})
 
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v4.1.7
 
       - name: Docker meta
         id: docker_meta
-        uses: docker/metadata-action@v5.0.0
+        uses: docker/metadata-action@v5.5.1
         with:
           images: quay.io/soketi/soketi
           tags: |
@@ -55,7 +55,7 @@ jobs:
           password: ${{ secrets.DOCKER_REGISTRY_TOKEN }}
 
       - name: Build and Push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           push: true
           context: .
@@ -86,11 +86,11 @@ jobs:
     name: Tag Latest Distroless (node:${{ matrix.node }})
 
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v4.1.7
 
       - name: Docker meta
         id: docker_meta
-        uses: docker/metadata-action@v5.0.0
+        uses: docker/metadata-action@v5.5.1
         with:
           images: quay.io/soketi/soketi
           tags: |
@@ -112,7 +112,7 @@ jobs:
           password: ${{ secrets.DOCKER_REGISTRY_TOKEN }}
 
       - name: Build and Push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           push: true
           context: .
@@ -143,11 +143,11 @@ jobs:
     name: Tag Latest Debian (node:${{ matrix.node }})
 
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v4.1.7
 
       - name: Docker meta
         id: docker_meta
-        uses: docker/metadata-action@v5.0.0
+        uses: docker/metadata-action@v5.5.1
         with:
           images: quay.io/soketi/soketi
           tags: |
@@ -169,7 +169,7 @@ jobs:
           password: ${{ secrets.DOCKER_REGISTRY_TOKEN }}
 
       - name: Build and Push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           push: true
           context: .
