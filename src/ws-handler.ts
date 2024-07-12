@@ -393,6 +393,7 @@ export class WsHandler {
                 let broadcastMessage = {
                     event: 'pusher_internal:subscription_succeeded',
                     channel,
+                    data: JSON.stringify({}),
                 };
 
                 ws.sendJson(broadcastMessage);
