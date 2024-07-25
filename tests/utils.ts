@@ -270,7 +270,7 @@ export class Utils {
     ): string {
         let token = new Pusher.Token(key, secret);
 
-        return key + ':' + token.sign(`${socketId}:${channel.name}`);
+        return key + ':' + token.sign(`${socketId}:${channel.name}${channel.channel_data ? ':' + channel.channel_data : ''}`);
     }
 
     static signTokenForPresenceChannel(

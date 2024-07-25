@@ -39,6 +39,90 @@ describe('private channel test', () => {
         });
     });
 
+
+    test('connects to private channel with channel data', done => {
+        let channelName = `private-${Utils.randomChannelName()}`;
+        Utils.newServer({}, (server: Server) => {
+            let client = Utils.newClientForPrivateChannel({
+                authorizer: (channel, options) => ({
+                    authorize: (socketId, callback) => {
+                        channel.channel_data = JSON.stringify({
+                            user_id: 1,
+                            user_info: {
+                                name: 'John Doe',
+                            }
+                        });
+                        const signature = Utils.signTokenForPrivateChannel(socketId, channel);
+                        callback(false, {
+                            auth: signature,
+                            channel_data: channel.channel_data
+                        });
+                    },
+                }),
+            });
+            let backend = Utils.newBackend();
+            client.connection.bind('connected', () => {
+                let channel = client.subscribe(channelName);
+
+                channel.bind('greeting', e => {
+                    expect(e.message).toBe('hello');
+                    client.disconnect();
+                    done();
+                });
+
+                channel.bind('pusher:subscription_succeeded', () => {
+                    backend.trigger(channelName, 'greeting', {message: 'hello'})
+                        .catch(error => {
+                            throw new Error(error);
+                        });
+                });
+            });
+        });
+    });
+
+    test('cannot connect to private channel with wrong authentication and channel data', done => {
+        Utils.newServer({}, (server: Server) => {
+            let client = Utils.newClientForPrivateChannel({
+                authorizer: (channel, options) => ({
+                    authorize: (socketId, callback) => {
+                        channel.channel_data = JSON.stringify({
+                            user_id: 1,
+                            user_info: {
+                                name: 'Jane Doe',
+                            }
+                        });
+                        const wrong_signature = Utils.signTokenForPrivateChannel(socketId, channel);
+                        channel.channel_data = JSON.stringify({
+                            user_id: 1,
+                            user_info: {
+                                name: 'John Doe',
+                            }
+                        });
+                        callback(false, {
+                            auth: wrong_signature,
+                            channel_data: channel.channel_data
+                        });
+                    },
+                }),
+            });
+
+            let channelName = `private-${Utils.randomChannelName()}`;
+
+            client.connection.bind('message', ({event, channel, data}) => {
+                if (event === 'pusher:subscription_error' && channel === channelName) {
+                    expect(data.type).toBe('AuthError');
+                    expect(data.status).toBe(401);
+                    client.disconnect();
+                    done();
+                }
+            });
+
+            client.connection.bind('connected', () => {
+                client.subscribe(channelName);
+            });
+        });
+    });
+
     test('cannot connect to private channel with wrong authentication', done => {
         Utils.newServer({}, (server: Server) => {
             let client = Utils.newClientForPrivateChannel({
@@ -159,9 +243,9 @@ describe('private channel test', () => {
 
                         channel.bind('greeting', e => {
                             expect(e.message).toBe('hello');
-    
+
                             let client2 = Utils.newClientForPrivateChannel();
-    
+
                             client2.connection.bind('connected', () => {
                                 let channel = client2.subscribe(channelName);
 

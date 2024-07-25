@@ -62,6 +62,10 @@ export class PrivateChannelManager extends PublicChannelManager {
      * Get the data to sign for the token for specific channel.
      */
     protected getDataToSignForSignature(socketId: string, message: PusherMessage): string {
-        return `${socketId}:${message.data.channel}`;
+        let data =  `${socketId}:${message.data.channel}`
+        if (message.data.channel_data) {
+            data += `:${message.data.channel_data}`;
+        }
+        return data;
     }
 }
