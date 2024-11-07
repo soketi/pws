@@ -6,6 +6,7 @@ import { Log } from './../log';
 import { RateLimiterAbstract } from 'rate-limiter-flexible';
 import { RedisRateLimiter } from './redis-rate-limiter';
 import { Server } from '../server';
+import { UserDataInterface } from '../adapters/user-data-interface';
 import { WebSocket } from 'uWebSockets.js';
 
 export class RateLimiter implements RateLimiterInterface {
@@ -32,21 +33,21 @@ export class RateLimiter implements RateLimiterInterface {
     /**
      * Consume the points for backend-received events.
      */
-    consumeBackendEventPoints(points: number, app?: App, ws?: WebSocket): Promise<ConsumptionResponse> {
+    consumeBackendEventPoints(points: number, app?: App, ws?: WebSocket<UserDataInterface>): Promise<ConsumptionResponse> {
         return this.driver.consumeBackendEventPoints(points, app, ws);
     }
 
     /**
      * Consume the points for frontend-received events.
      */
-    consumeFrontendEventPoints(points: number, app?: App, ws?: WebSocket): Promise<ConsumptionResponse> {
+    consumeFrontendEventPoints(points: number, app?: App, ws?: WebSocket<UserDataInterface>): Promise<ConsumptionResponse> {
         return this.driver.consumeFrontendEventPoints(points, app, ws);
     }
 
     /**
      * Consume the points for HTTP read requests.
      */
-    consumeReadRequestsPoints(points: number, app?: App, ws?: WebSocket): Promise<ConsumptionResponse> {
+    consumeReadRequestsPoints(points: number, app?: App, ws?: WebSocket<UserDataInterface>): Promise<ConsumptionResponse> {
         return this.driver.consumeReadRequestsPoints(points, app, ws);
     }
 

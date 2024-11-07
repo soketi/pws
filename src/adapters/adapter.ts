@@ -7,6 +7,7 @@ import { NatsAdapter } from './nats-adapter';
 import { PresenceMemberInfo } from '../channels/presence-channel-manager';
 import { RedisAdapter } from './redis-adapter';
 import { Server } from '../server';
+import { UserDataInterface } from './user-data-interface';
 import { WebSocket } from 'uWebSockets.js';
 
 export class Adapter implements AdapterInterface {
@@ -56,7 +57,7 @@ export class Adapter implements AdapterInterface {
     /**
      * Add a new socket to the namespace.
      */
-    async addSocket(appId: string, ws: WebSocket): Promise<boolean> {
+    async addSocket(appId: string, ws: WebSocket<UserDataInterface>): Promise<boolean> {
         return this.driver.addSocket(appId, ws);
     }
 
@@ -71,7 +72,7 @@ export class Adapter implements AdapterInterface {
      * Add a socket ID to the channel identifier.
      * Return the total number of connections after the connection.
      */
-    async addToChannel(appId: string, channel: string, ws: WebSocket): Promise<number> {
+    async addToChannel(appId: string, channel: string, ws: WebSocket<UserDataInterface>): Promise<number> {
         return this.driver.addToChannel(appId, channel, ws);
     }
 
@@ -86,7 +87,7 @@ export class Adapter implements AdapterInterface {
     /**
      * Get all sockets from the namespace.
      */
-    async getSockets(appId: string, onlyLocal = false): Promise<Map<string, WebSocket>> {
+    async getSockets(appId: string, onlyLocal = false): Promise<Map<string, WebSocket<UserDataInterface>>> {
         return this.driver.getSockets(appId, onlyLocal);
     }
 
@@ -114,7 +115,7 @@ export class Adapter implements AdapterInterface {
     /**
      * Get all the channel sockets associated with a namespace.
      */
-    async getChannelSockets(appId: string, channel: string, onlyLocal = false): Promise<Map<string, WebSocket>> {
+    async getChannelSockets(appId: string, channel: string, onlyLocal = false): Promise<Map<string, WebSocket<UserDataInterface>>> {
         return this.driver.getChannelSockets(appId, channel, onlyLocal);
     }
 
@@ -163,21 +164,21 @@ export class Adapter implements AdapterInterface {
     /**
      * Add to the users list the associated socket connection ID.
      */
-    addUser(ws: WebSocket): Promise<void> {
+    addUser(ws: WebSocket<UserDataInterface>): Promise<void> {
         return this.driver.addUser(ws);
     }
 
     /**
      * Remove the user associated with the connection ID.
      */
-    removeUser(ws: WebSocket): Promise<void> {
+    removeUser(ws: WebSocket<UserDataInterface>): Promise<void> {
         return this.driver.removeUser(ws);
     }
 
     /**
      * Get the sockets associated with an user.
      */
-    getUserSockets(appId: string, userId: string|number): Promise<Set<WebSocket>> {
+    getUserSockets(appId: string, userId: string|number): Promise<Set<WebSocket<UserDataInterface>>> {
         return this.driver.getUserSockets(appId, userId);
     }
 

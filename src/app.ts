@@ -101,14 +101,14 @@ export class App implements AppInterface {
     public webhooks: WebhookInterface[];
 
     /**
-     * @type {string|number}
+     * @type {number}
      */
-    public maxPresenceMembersPerChannel: string|number;
+    public maxPresenceMembersPerChannel: number;
 
     /**
-     * @type {string|number}
+     * @type {number}
      */
-    public maxPresenceMemberSizeInKb: string|number;
+    public maxPresenceMemberSizeInKb: number;
 
     /**
      * @type {number}

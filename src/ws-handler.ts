@@ -10,6 +10,7 @@ import { PrivateChannelManager } from './channels';
 import { PublicChannelManager } from './channels';
 import { PusherMessage, uWebSocketMessage } from './message';
 import { Server } from './server';
+import { UserDataInterface } from './adapters/user-data-interface';
 import { Utils } from './utils';
 import { WebSocket } from 'uWebSockets.js';
 
@@ -50,20 +51,20 @@ export class WsHandler {
     /**
      * Handle a new open connection.
      */
-    onOpen(ws: WebSocket): any {
+    onOpen(ws: WebSocket<UserDataInterface>): any {
         if (this.server.options.debug) {
             Log.websocketTitle('👨‍🔬 New connection:');
             Log.websocket({ ws });
         }
 
-        ws.sendJson = (data) => {
+        ws.getUserData().sendJson = (data) => {
             try {
                 ws.send(JSON.stringify(data));
 
                 this.updateTimeout(ws);
 
-                if (ws.app) {
-                    this.server.metricsManager.markWsMessageSent(ws.app.id, data);
+                if (ws.getUserData().app) {
+                    this.server.metricsManager.markWsMessageSent(ws.getUserData().app.id, data);
                 }
 
                 if (this.server.options.debug) {
@@ -75,12 +76,12 @@ export class WsHandler {
             }
         }
 
-        ws.id = this.generateSocketId();
-        ws.subscribedChannels = new Set();
-        ws.presence = new Map<string, PresenceMemberInfo>();
+        ws.getUserData().id = this.generateSocketId();
+        ws.getUserData().subscribedChannels = new Set();
+        ws.getUserData().presence = new Map<string, PresenceMemberInfo>();
 
         if (this.server.closing) {
-            ws.sendJson({
+            ws.getUserData().sendJson({
                 event: 'pusher:error',
                 data: {
                     code: 4200,
@@ -93,22 +94,22 @@ export class WsHandler {
 
         this.checkForValidApp(ws).then(validApp => {
             if (!validApp) {
-                ws.sendJson({
+                ws.getUserData().sendJson({
                     event: 'pusher:error',
                     data: {
                         code: 4001,
-                        message: `App key ${ws.appKey} does not exist.`,
+                        message: `App key ${ws.getUserData().appKey} does not exist.`,
                     },
                 });
 
                 return ws.end(4001);
             }
 
-            ws.app = validApp.forWebSocket();
+            ws.getUserData().app = validApp.forWebSocket();
 
             this.checkIfAppIsEnabled(ws).then(enabled => {
                 if (!enabled) {
-                    ws.sendJson({
+                    ws.getUserData().sendJson({
                         event: 'pusher:error',
                         data: {
                             code: 4003,
@@ -121,7 +122,7 @@ export class WsHandler {
 
                 this.checkAppConnectionLimit(ws).then(canConnect => {
                     if (!canConnect) {
-                        ws.sendJson({
+                        ws.getUserData().sendJson({
                             event: 'pusher:error',
                             data: {
                                 code: 4100,
@@ -132,19 +133,19 @@ export class WsHandler {
                         ws.end(4100);
                     } else {
                         // Make sure to update the socket after new data was pushed in.
-                        this.server.adapter.addSocket(ws.app.id, ws);
+                        this.server.adapter.addSocket(ws.getUserData().app.id, ws);
 
                         let broadcastMessage = {
                             event: 'pusher:connection_established',
                             data: JSON.stringify({
-                                socket_id: ws.id,
+                                socket_id: ws.getUserData().id,
                                 activity_timeout: 30,
                             }),
                         };
 
-                        ws.sendJson(broadcastMessage);
+                        ws.getUserData().sendJson(broadcastMessage);
 
-                        if (ws.app.enableUserAuthentication) {
+                        if (ws.getUserData().app.enableUserAuthentication) {
                             this.setUserAuthenticationTimeout(ws);
                         }
 
@@ -158,7 +159,7 @@ export class WsHandler {
     /**
      * Handle a received message from the client.
      */
-    onMessage(ws: WebSocket, message: uWebSocketMessage, isBinary: boolean): any {
+    onMessage(ws: WebSocket<UserDataInterface>, message: uWebSocketMessage, isBinary: boolean): any {
         if (message instanceof ArrayBuffer) {
             try {
                 message = JSON.parse(ab2str(message)) as PusherMessage;
@@ -191,15 +192,15 @@ export class WsHandler {
             }
         }
 
-        if (ws.app) {
-            this.server.metricsManager.markWsMessageReceived(ws.app.id, message);
+        if (ws.getUserData().app) {
+            this.server.metricsManager.markWsMessageReceived(ws.getUserData().app.id, message);
         }
     }
 
     /**
      * Handle the event of the client closing the connection.
      */
-    onClose(ws: WebSocket, code: number, message: uWebSocketMessage): any {
+    onClose(ws: WebSocket<UserDataInterface>, code: number, message: uWebSocketMessage): any {
         if (this.server.options.debug) {
             Log.websocketTitle('❌ Connection closed:');
             Log.websocket({ ws, code, message });
@@ -214,10 +215,10 @@ export class WsHandler {
     /**
      * Evict the local socket.
      */
-    evictSocketFromMemory(ws: WebSocket): Promise<void> {
+    evictSocketFromMemory(ws: WebSocket<UserDataInterface>): Promise<void> {
         return this.unsubscribeFromAllChannels(ws, true).then(() => {
-            if (ws.app) {
-                this.server.adapter.removeSocket(ws.app.id, ws.id);
+            if (ws.getUserData().app) {
+                this.server.adapter.removeSocket(ws.getUserData().app.id, ws.getUserData().id);
                 this.server.metricsManager.markDisconnection(ws);
             }
 
@@ -237,9 +238,9 @@ export class WsHandler {
 
         return async.each([...namespaces], ([namespaceId, namespace]: [string, Namespace], nsCallback) => {
             namespace.getSockets().then(sockets => {
-                async.each([...sockets], ([wsId, ws]: [string, WebSocket], wsCallback) => {
+                async.each([...sockets], ([wsId, ws]: [string, WebSocket<UserDataInterface>], wsCallback) => {
                     try {
-                        ws.sendJson({
+                        ws.getUserData().sendJson({
                             event: 'pusher:error',
                             data: {
                                 code: 4200,
@@ -287,14 +288,14 @@ export class WsHandler {
     /**
      * Send back the pong response.
      */
-    handlePong(ws: WebSocket): any {
-        ws.sendJson({
+    handlePong(ws: WebSocket<UserDataInterface>): any {
+        ws.getUserData().sendJson({
             event: 'pusher:pong',
             data: {},
         });
 
         if (this.server.closing) {
-            ws.sendJson({
+            ws.getUserData().sendJson({
                 event: 'pusher:error',
                 data: {
                     code: 4200,
@@ -311,9 +312,9 @@ export class WsHandler {
     /**
      * Instruct the server to subscribe the connection to the channel.
      */
-    subscribeToChannel(ws: WebSocket, message: PusherMessage): any {
+    subscribeToChannel(ws: WebSocket<UserDataInterface>, message: PusherMessage): any {
         if (this.server.closing) {
-            ws.sendJson({
+            ws.getUserData().sendJson({
                 event: 'pusher:error',
                 data: {
                     code: 4200,
@@ -331,18 +332,18 @@ export class WsHandler {
         let channel = message.data.channel;
         let channelManager = this.getChannelManagerFor(channel);
 
-        if (channel.length > ws.app.maxChannelNameLength) {
+        if (channel.length > ws.getUserData().app.maxChannelNameLength) {
             let broadcastMessage = {
                 event: 'pusher:subscription_error',
                 channel,
                 data: {
                     type: 'LimitReached',
-                    error: `The channel name is longer than the allowed ${ws.app.maxChannelNameLength} characters.`,
+                    error: `The channel name is longer than the allowed ${ws.getUserData().app.maxChannelNameLength} characters.`,
                     status: 4009,
                 },
             };
 
-            ws.sendJson(broadcastMessage);
+            ws.getUserData().sendJson(broadcastMessage);
 
             return;
         }
@@ -353,7 +354,7 @@ export class WsHandler {
 
                 // For auth errors, send pusher:subscription_error
                 if (authError) {
-                    return ws.sendJson({
+                    return ws.getUserData().sendJson({
                         event: 'pusher:subscription_error',
                         channel,
                         data: {
@@ -365,7 +366,7 @@ export class WsHandler {
                 }
 
                 // Otherwise, catch any non-auth related errors.
-                return ws.sendJson({
+                return ws.getUserData().sendJson({
                     event: 'pusher:subscription_error',
                     channel,
                     data: {
@@ -376,16 +377,16 @@ export class WsHandler {
                 });
             }
 
-            if (!ws.subscribedChannels.has(channel)) {
-                ws.subscribedChannels.add(channel);
+            if (!ws.getUserData().subscribedChannels.has(channel)) {
+                ws.getUserData().subscribedChannels.add(channel);
             }
 
             // Make sure to update the socket after new data was pushed in.
-            this.server.adapter.addSocket(ws.app.id, ws);
+            this.server.adapter.addSocket(ws.getUserData().app.id, ws);
 
             // If the connection freshly joined, send the webhook:
             if (response.channelConnections === 1) {
-                this.server.webhookSender.sendChannelOccupied(ws.app, channel);
+                this.server.webhookSender.sendChannelOccupied(ws.getUserData().app, channel);
             }
 
             // For non-presence channels, end with subscription succeeded.
@@ -395,7 +396,7 @@ export class WsHandler {
                     channel,
                 };
 
-                ws.sendJson(broadcastMessage);
+                ws.getUserData().sendJson(broadcastMessage);
 
                 if (Utils.isCachingChannel(channel)) {
                     this.sendMissedCacheIfExists(ws, channel);
@@ -405,26 +406,26 @@ export class WsHandler {
             }
 
             // Otherwise, prepare a response for the presence channel.
-            this.server.adapter.getChannelMembers(ws.app.id, channel, false).then(members => {
+            this.server.adapter.getChannelMembers(ws.getUserData().app.id, channel, false).then(members => {
                 let { user_id, user_info } = response.member;
 
-                ws.presence.set(channel, response.member);
+                ws.getUserData().presence.set(channel, response.member);
 
                 // Make sure to update the socket after new data was pushed in.
-                this.server.adapter.addSocket(ws.app.id, ws);
+                this.server.adapter.addSocket(ws.getUserData().app.id, ws);
 
                 // If the member already exists in the channel, don't resend the member_added event.
                 if (!members.has(user_id as string)) {
-                    this.server.webhookSender.sendMemberAdded(ws.app, channel, user_id as string);
+                    this.server.webhookSender.sendMemberAdded(ws.getUserData().app, channel, user_id as string);
 
-                    this.server.adapter.send(ws.app.id, channel, JSON.stringify({
+                    this.server.adapter.send(ws.getUserData().app.id, channel, JSON.stringify({
                         event: 'pusher_internal:member_added',
                         channel,
                         data: JSON.stringify({
                             user_id: user_id,
                             user_info: user_info,
                         }),
-                    }), ws.id);
+                    }), ws.getUserData().id);
 
                     members.set(user_id as string, user_info);
                 }
@@ -441,7 +442,7 @@ export class WsHandler {
                     }),
                 };
 
-                ws.sendJson(broadcastMessage);
+                ws.getUserData().sendJson(broadcastMessage);
 
                 if (Utils.isCachingChannel(channel)) {
                     this.sendMissedCacheIfExists(ws, channel);
@@ -449,7 +450,7 @@ export class WsHandler {
             }).catch(err => {
                 Log.error(err);
 
-                ws.sendJson({
+                ws.getUserData().sendJson({
                     event: 'pusher:error',
                     channel,
                     data: {
@@ -465,46 +466,46 @@ export class WsHandler {
     /**
      * Instruct the server to unsubscribe the connection from the channel.
      */
-    unsubscribeFromChannel(ws: WebSocket, channel: string, closing = false): Promise<void> {
+    unsubscribeFromChannel(ws: WebSocket<UserDataInterface>, channel: string, closing = false): Promise<void> {
         let channelManager = this.getChannelManagerFor(channel);
 
         return channelManager.leave(ws, channel).then(response => {
-            let member = ws.presence.get(channel);
+            let member = ws.getUserData().presence.get(channel);
 
             if (response.left) {
                 // Send presence channel-speific events and delete specific data.
                 // This can happen only if the user is connected to the presence channel.
-                if (channelManager instanceof PresenceChannelManager && ws.presence.has(channel)) {
-                    ws.presence.delete(channel);
+                if (channelManager instanceof PresenceChannelManager && ws.getUserData().presence.has(channel)) {
+                    ws.getUserData().presence.delete(channel);
 
                     // Make sure to update the socket after new data was pushed in.
-                    this.server.adapter.addSocket(ws.app.id, ws);
+                    this.server.adapter.addSocket(ws.getUserData().app.id, ws);
 
-                    this.server.adapter.getChannelMembers(ws.app.id, channel, false).then(members => {
+                    this.server.adapter.getChannelMembers(ws.getUserData().app.id, channel, false).then(members => {
                         if (!members.has(member.user_id as string)) {
-                            this.server.webhookSender.sendMemberRemoved(ws.app, channel, member.user_id);
+                            this.server.webhookSender.sendMemberRemoved(ws.getUserData().app, channel, member.user_id);
 
-                            this.server.adapter.send(ws.app.id, channel, JSON.stringify({
+                            this.server.adapter.send(ws.getUserData().app.id, channel, JSON.stringify({
                                 event: 'pusher_internal:member_removed',
                                 channel,
                                 data: JSON.stringify({
                                     user_id: member.user_id,
                                 }),
-                            }), ws.id);
+                            }), ws.getUserData().id);
                         }
                     });
                 }
 
-                ws.subscribedChannels.delete(channel);
+                ws.getUserData().subscribedChannels.delete(channel);
 
                 // Make sure to update the socket after new data was pushed in,
                 // but only if the user is not closing the connection.
                 if (!closing) {
-                    this.server.adapter.addSocket(ws.app.id, ws);
+                    this.server.adapter.addSocket(ws.getUserData().app.id, ws);
                 }
 
                 if (response.remainingConnections === 0) {
-                    this.server.webhookSender.sendChannelVacated(ws.app, channel);
+                    this.server.webhookSender.sendChannelVacated(ws.getUserData().app, channel);
                 }
             }
 
@@ -520,16 +521,16 @@ export class WsHandler {
     /**
      * Unsubscribe the connection from all channels.
      */
-    unsubscribeFromAllChannels(ws: WebSocket, closing = true): Promise<void> {
-        if (!ws.subscribedChannels) {
+    unsubscribeFromAllChannels(ws: WebSocket<UserDataInterface>, closing = true): Promise<void> {
+        if (!ws.getUserData().subscribedChannels) {
             return Promise.resolve();
         }
 
         return Promise.all([
-            async.each(ws.subscribedChannels, (channel, callback) => {
+            async.each(ws.getUserData().subscribedChannels, (channel, callback) => {
                 this.unsubscribeFromChannel(ws, channel, closing).then(() => callback());
             }),
-            ws.app && ws.user ? this.server.adapter.removeUser(ws) : new Promise<void>(resolve => resolve()),
+            ws.getUserData().app && ws.getUserData().user ? this.server.adapter.removeUser(ws) : new Promise<void>(resolve => resolve()),
         ]).then(() => {
             return;
         })
@@ -538,11 +539,11 @@ export class WsHandler {
     /**
      * Handle the events coming from the client.
      */
-    handleClientEvent(ws: WebSocket, message: PusherMessage): any {
+    handleClientEvent(ws: WebSocket<UserDataInterface>, message: PusherMessage): any {
         let { event, data, channel } = message;
 
-        if (!ws.app.enableClientMessages) {
-            return ws.sendJson({
+        if (!ws.getUserData().app.enableClientMessages) {
+            return ws.getUserData().sendJson({
                 event: 'pusher:error',
                 channel,
                 data: {
@@ -553,17 +554,17 @@ export class WsHandler {
         }
 
         // Make sure the event name length is not too big.
-        if (event.length > ws.app.maxEventNameLength) {
+        if (event.length > ws.getUserData().app.maxEventNameLength) {
             let broadcastMessage = {
                 event: 'pusher:error',
                 channel,
                 data: {
                     code: 4301,
-                    message: `Event name is too long. Maximum allowed size is ${ws.app.maxEventNameLength}.`,
+                    message: `Event name is too long. Maximum allowed size is ${ws.getUserData().app.maxEventNameLength}.`,
                 },
             };
 
-            ws.sendJson(broadcastMessage);
+            ws.getUserData().sendJson(broadcastMessage);
 
             return;
         }
@@ -571,29 +572,29 @@ export class WsHandler {
         let payloadSizeInKb = Utils.dataToKilobytes(message.data);
 
         // Make sure the total payload of the message body is not too big.
-        if (payloadSizeInKb > parseFloat(ws.app.maxEventPayloadInKb as string)) {
+        if (payloadSizeInKb > parseFloat(ws.getUserData().app.maxEventPayloadInKb as string)) {
             let broadcastMessage = {
                 event: 'pusher:error',
                 channel,
                 data: {
                     code: 4301,
-                    message: `The event data should be less than ${ws.app.maxEventPayloadInKb} KB.`,
+                    message: `The event data should be less than ${ws.getUserData().app.maxEventPayloadInKb} KB.`,
                 },
             };
 
-            ws.sendJson(broadcastMessage);
+            ws.getUserData().sendJson(broadcastMessage);
 
             return;
         }
 
-        this.server.adapter.isInChannel(ws.app.id, channel, ws.id).then(canBroadcast => {
+        this.server.adapter.isInChannel(ws.getUserData().app.id, channel, ws.getUserData().id).then(canBroadcast => {
             if (!canBroadcast) {
                 return;
             }
 
-            this.server.rateLimiter.consumeFrontendEventPoints(1, ws.app, ws).then(response => {
+            this.server.rateLimiter.consumeFrontendEventPoints(1, ws.getUserData().app, ws).then(response => {
                 if (response.canContinue) {
-                    let userId = ws.presence.has(channel) ? ws.presence.get(channel).user_id : null;
+                    let userId = ws.getUserData().presence.has(channel) ? ws.getUserData().presence.get(channel).user_id : null;
 
                     let message = JSON.stringify({
                         event,
@@ -602,16 +603,16 @@ export class WsHandler {
                         ...userId ? { user_id: userId } : {},
                     });
 
-                    this.server.adapter.send(ws.app.id, channel, message, ws.id);
+                    this.server.adapter.send(ws.getUserData().app.id, channel, message, ws.getUserData().id);
 
                     this.server.webhookSender.sendClientEvent(
-                        ws.app, channel, event, data, ws.id, userId,
+                        ws.getUserData().app, channel, event, data, ws.getUserData().id, userId,
                     );
 
                     return;
                 }
 
-                ws.sendJson({
+                ws.getUserData().sendJson({
                     event: 'pusher:error',
                     channel,
                     data: {
@@ -626,14 +627,14 @@ export class WsHandler {
     /**
      * Handle the signin coming from the frontend.
      */
-    handleSignin(ws: WebSocket, message: PusherMessage): void {
-        if (!ws.userAuthenticationTimeout) {
+    handleSignin(ws: WebSocket<UserDataInterface>, message: PusherMessage): void {
+        if (!ws.getUserData().userAuthenticationTimeout) {
             return;
         }
 
         this.signinTokenIsValid(ws, message.data.user_data, message.data.auth).then(isValid => {
             if (!isValid) {
-                ws.sendJson({
+                ws.getUserData().sendJson({
                     event: 'pusher:error',
                     data: {
                         code: 4009,
@@ -653,7 +654,7 @@ export class WsHandler {
             let decodedUser = JSON.parse(message.data.user_data);
 
             if (!decodedUser.id) {
-                ws.sendJson({
+                ws.getUserData().sendJson({
                     event: 'pusher:error',
                     data: {
                         code: 4009,
@@ -670,21 +671,21 @@ export class WsHandler {
                 return;
             }
 
-            ws.user = {
+            ws.getUserData().user = {
                 ...decodedUser,
                 ...{
                     id: decodedUser.id.toString(),
                 },
             };
 
-            if (ws.userAuthenticationTimeout) {
-                clearTimeout(ws.userAuthenticationTimeout);
+            if (ws.getUserData().userAuthenticationTimeout) {
+                clearTimeout(ws.getUserData().userAuthenticationTimeout);
             }
 
-            this.server.adapter.addSocket(ws.app.id, ws);
+            this.server.adapter.addSocket(ws.getUserData().app.id, ws);
 
             this.server.adapter.addUser(ws).then(() => {
-                ws.sendJson({
+                ws.getUserData().sendJson({
                     event: 'pusher:signin_success',
                     data: message.data,
                 });
@@ -695,14 +696,14 @@ export class WsHandler {
     /**
      * Send the first event as cache_missed, if it exists, to catch up.
      */
-    sendMissedCacheIfExists(ws: WebSocket, channel: string) {
-        this.server.cacheManager.get(`app:${ws.app.id}:channel:${channel}:cache_miss`).then(cachedEvent => {
+    sendMissedCacheIfExists(ws: WebSocket<UserDataInterface>, channel: string) {
+        this.server.cacheManager.get(`app:${ws.getUserData().app.id}:channel:${channel}:cache_miss`).then(cachedEvent => {
             if (cachedEvent) {
                 let { event, data } = JSON.parse(cachedEvent);
-                ws.sendJson({ event: event, channel, data: data });
+                ws.getUserData().sendJson({ event: event, channel, data: data });
             } else {
-                ws.sendJson({ event: 'pusher:cache_miss', channel });
-                this.server.webhookSender.sendCacheMissed(ws.app, channel);
+                ws.getUserData().sendJson({ event: 'pusher:cache_miss', channel });
+                this.server.webhookSender.sendCacheMissed(ws.getUserData().app, channel);
             }
         });
     }
@@ -726,24 +727,24 @@ export class WsHandler {
     /**
      * Use the app manager to retrieve a valid app.
      */
-    protected checkForValidApp(ws: WebSocket): Promise<App|null> {
-        return this.server.appManager.findByKey(ws.appKey);
+    protected checkForValidApp(ws: WebSocket<UserDataInterface>): Promise<App|null> {
+        return this.server.appManager.findByKey(ws.getUserData().appKey);
     }
 
     /**
      * Make sure that the app is enabled.
      */
-    protected checkIfAppIsEnabled(ws: WebSocket): Promise<boolean> {
-        return Promise.resolve(ws.app.enabled);
+    protected checkIfAppIsEnabled(ws: WebSocket<UserDataInterface>): Promise<boolean> {
+        return Promise.resolve(ws.getUserData().app.enabled);
     }
 
     /**
      * Make sure the connection limit is not reached with this connection.
      * Return a boolean wether the user can connect or not.
      */
-    protected checkAppConnectionLimit(ws: WebSocket): Promise<boolean> {
-        return this.server.adapter.getSocketsCount(ws.app.id).then(wsCount => {
-            let maxConnections = parseInt(ws.app.maxConnections as string) || -1;
+    protected checkAppConnectionLimit(ws: WebSocket<UserDataInterface>): Promise<boolean> {
+        return this.server.adapter.getSocketsCount(ws.getUserData().app.id).then(wsCount => {
+            let maxConnections = parseInt(ws.getUserData().app.maxConnections as string) || -1;
 
             if (maxConnections < 0) {
                 return true;
@@ -759,7 +760,7 @@ export class WsHandler {
     /**
      * Check is an incoming connection can subscribe.
      */
-    signinTokenIsValid(ws: WebSocket, userData: string, signatureToCheck: string): Promise<boolean> {
+    signinTokenIsValid(ws: WebSocket<UserDataInterface>, userData: string, signatureToCheck: string): Promise<boolean> {
         return this.signinTokenForUserData(ws, userData).then(expectedSignature => {
             return signatureToCheck === expectedSignature;
         });
@@ -768,13 +769,13 @@ export class WsHandler {
     /**
      * Get the signin token from the given message, by the Socket.
      */
-    protected signinTokenForUserData(ws: WebSocket, userData: string): Promise<string> {
+    protected signinTokenForUserData(ws: WebSocket<UserDataInterface>, userData: string): Promise<string> {
         return new Promise(resolve => {
-            let decodedString = `${ws.id}::user::${userData}`;
-            let token = new Pusher.Token(ws.app.key, ws.app.secret);
+            let decodedString = `${ws.getUserData().id}::user::${userData}`;
+            let token = new Pusher.Token(ws.getUserData().app.key, ws.getUserData().app.secret);
 
             resolve(
-                ws.app.key + ':' + token.sign(decodedString)
+                ws.getUserData().app.key + ':' + token.sign(decodedString)
             );
         });
     }
@@ -794,19 +795,19 @@ export class WsHandler {
     /**
      * Clear WebSocket timeout.
      */
-    protected clearTimeout(ws: WebSocket): void {
-        if (ws.timeout) {
-            clearTimeout(ws.timeout);
+    protected clearTimeout(ws: WebSocket<UserDataInterface>): void {
+        if (ws.getUserData().timeout) {
+            clearTimeout(ws.getUserData().timeout);
         }
     }
 
     /**
      * Update WebSocket timeout.
      */
-    protected updateTimeout(ws: WebSocket): void {
+    protected updateTimeout(ws: WebSocket<UserDataInterface>): void {
         this.clearTimeout(ws);
 
-        ws.timeout = setTimeout(() => {
+        ws.getUserData().timeout = setTimeout(() => {
             try {
                 ws.end(4201);
             } catch (e) {
@@ -818,9 +819,9 @@ export class WsHandler {
     /**
      * Set the authentication timeout for the socket.
      */
-    protected setUserAuthenticationTimeout(ws: WebSocket): void {
-        ws.userAuthenticationTimeout = setTimeout(() => {
-            ws.sendJson({
+    protected setUserAuthenticationTimeout(ws: WebSocket<UserDataInterface>): void {
+        ws.getUserData().userAuthenticationTimeout = setTimeout(() => {
+            ws.getUserData().sendJson({
                 event: 'pusher:error',
                 data: {
                     code: 4009,

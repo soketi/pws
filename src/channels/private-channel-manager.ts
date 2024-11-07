@@ -1,6 +1,7 @@
 import { App } from '../app';
 import { JoinResponse, PublicChannelManager } from './public-channel-manager';
 import { PusherMessage } from '../message';
+import { UserDataInterface } from '../adapters/user-data-interface';
 import { WebSocket } from 'uWebSockets.js';
 
 const Pusher = require('pusher');
@@ -9,10 +10,10 @@ export class PrivateChannelManager extends PublicChannelManager {
     /**
      * Join the connection to the channel.
      */
-    join(ws: WebSocket, channel: string, message?: PusherMessage): Promise<JoinResponse> {
+    join(ws: WebSocket<UserDataInterface>, channel: string, message?: PusherMessage): Promise<JoinResponse> {
         let passedSignature = message?.data?.auth;
 
-        return this.signatureIsValid(ws.app, ws.id, message, passedSignature).then(isValid => {
+        return this.signatureIsValid(ws.getUserData().app, ws.getUserData().id, message, passedSignature).then(isValid => {
             if (!isValid) {
                 return {
                     ws,
@@ -27,8 +28,8 @@ export class PrivateChannelManager extends PublicChannelManager {
             return super.join(ws, channel, message).then(joinResponse => {
                 // If the users joined to a private channel with authentication,
                 // proceed clearing the authentication timeout.
-                if (joinResponse.success && ws.userAuthenticationTimeout) {
-                    clearTimeout(ws.userAuthenticationTimeout);
+                if (joinResponse.success && ws.getUserData().userAuthenticationTimeout) {
+                    clearTimeout(ws.getUserData().userAuthenticationTimeout);
                 }
 
                 return joinResponse;

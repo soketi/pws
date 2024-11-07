@@ -1,5 +1,6 @@
 import { App } from './../app';
 import { RateLimiterAbstract, RateLimiterRes } from 'rate-limiter-flexible';
+import { UserDataInterface } from '../adapters/user-data-interface';
 import { WebSocket } from 'uWebSockets.js';
 
 export interface ConsumptionResponse {
@@ -21,17 +22,17 @@ export interface RateLimiterInterface {
     /**
      * Consume the points for backend-received events.
      */
-    consumeBackendEventPoints(points: number, app?: App, ws?: WebSocket): Promise<ConsumptionResponse>;
+    consumeBackendEventPoints(points: number, app?: App, ws?: WebSocket<UserDataInterface>): Promise<ConsumptionResponse>;
 
     /**
      * Consume the points for frontend-received events.
      */
-    consumeFrontendEventPoints(points: number, app?: App, ws?: WebSocket): Promise<ConsumptionResponse>;
+    consumeFrontendEventPoints(points: number, app?: App, ws?: WebSocket<UserDataInterface>): Promise<ConsumptionResponse>;
 
     /**
      * Consume the points for HTTP read requests.
      */
-    consumeReadRequestsPoints(points: number, app?: App, ws?: WebSocket): Promise<ConsumptionResponse>;
+    consumeReadRequestsPoints(points: number, app?: App, ws?: WebSocket<UserDataInterface>): Promise<ConsumptionResponse>;
 
     /**
      * Create a new rate limiter instance.

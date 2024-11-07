@@ -2,6 +2,7 @@ import { JoinResponse, LeaveResponse } from './public-channel-manager';
 import { Log } from '../log';
 import { PrivateChannelManager } from './private-channel-manager';
 import { PusherMessage } from '../message';
+import { UserDataInterface } from '../adapters/user-data-interface';
 import { Utils } from '../utils';
 import { WebSocket } from 'uWebSockets.js';
 
@@ -19,9 +20,9 @@ export class PresenceChannelManager extends PrivateChannelManager {
     /**
      * Join the connection to the channel.
      */
-    join(ws: WebSocket, channel: string, message?: PusherMessage): Promise<JoinResponse> {
-        return this.server.adapter.getChannelMembersCount(ws.app.id, channel).then(membersCount => {
-            if (membersCount + 1 > ws.app.maxPresenceMembersPerChannel) {
+    join(ws: WebSocket<UserDataInterface>, channel: string, message?: PusherMessage): Promise<JoinResponse> {
+        return this.server.adapter.getChannelMembersCount(ws.getUserData().app.id, channel).then(membersCount => {
+            if (membersCount + 1 > ws.getUserData().app.maxPresenceMembersPerChannel) {
                 return {
                     success: false,
                     ws,
@@ -35,12 +36,12 @@ export class PresenceChannelManager extends PrivateChannelManager {
 
             let memberSizeInKb = Utils.dataToKilobytes(member.user_info);
 
-            if (memberSizeInKb > ws.app.maxPresenceMemberSizeInKb) {
+            if (memberSizeInKb > ws.getUserData().app.maxPresenceMemberSizeInKb) {
                 return {
                     success: false,
                     ws,
                     errorCode: 4301,
-                    errorMessage: `The maximum size for a channel member is ${ws.app.maxPresenceMemberSizeInKb} KB.`,
+                    errorMessage: `The maximum size for a channel member is ${ws.getUserData().app.maxPresenceMemberSizeInKb} KB.`,
                     type: 'LimitReached',
                 };
             }
@@ -73,12 +74,12 @@ export class PresenceChannelManager extends PrivateChannelManager {
     /**
      * Mark the connection as closed and unsubscribe it.
      */
-    leave(ws: WebSocket, channel: string): Promise<LeaveResponse> {
+    leave(ws: WebSocket<UserDataInterface>, channel: string): Promise<LeaveResponse> {
         return super.leave(ws, channel).then(response => {
             return {
                 ...response,
                 ...{
-                    member: ws.presence.get(channel),
+                    member: ws.getUserData().presence.get(channel),
                 },
             };
         });
