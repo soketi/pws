@@ -5,6 +5,7 @@ import { DynamoDbAppManager } from './dynamodb-app-manager';
 import { Log } from '../log';
 import { MysqlAppManager } from './mysql-app-manager';
 import { PostgresAppManager } from './postgres-app-manager';
+import { SqliteAppManager } from './sqlite-app-manager';
 import { Server } from '../server';
 
 /**
@@ -20,16 +21,24 @@ export class AppManager implements AppManagerInterface {
      * Create a new database instance.
      */
     constructor(protected server: Server) {
-        if (server.options.appManager.driver === 'array') {
-            this.driver = new ArrayAppManager(server);
-        } else if (server.options.appManager.driver === 'mysql') {
-            this.driver = new MysqlAppManager(server);
-        } else if (server.options.appManager.driver === 'postgres') {
-            this.driver = new PostgresAppManager(server);
-        } else if (server.options.appManager.driver === 'dynamodb') {
-            this.driver = new DynamoDbAppManager(server);
-        } else {
-            Log.error('Clients driver not set.');
+        switch (server.options.appManager.driver) {
+            case 'array':
+                this.driver = new ArrayAppManager(server);
+                break;
+            case 'mysql':
+                this.driver = new MysqlAppManager(server);
+                break;
+            case 'postgres':
+                this.driver = new PostgresAppManager(server);
+                break;
+            case 'sqlite':
+                this.driver = new SqliteAppManager(server);
+                break;
+            case 'dynamodb':
+                this.driver = new DynamoDbAppManager(server);
+                break;
+            default:
+                Log.error('Clients driver not set.');
         }
     }
 

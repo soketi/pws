@@ -33,6 +33,7 @@ jobs:
           - array
           - mysql
           - postgres
+          - sqlite
           - dynamodb
 
         include:
@@ -98,6 +99,11 @@ jobs:
           psql --host=127.0.0.1 --username=testing testing < tests/fixtures/postgres_schema.sql
         env:
           PGPASSWORD: testing
+
+      # Import SQLite test fixture
+      - name: Setup SQLite
+        if: "matrix.app_manager == 'sqlite'"
+        run: sqlite3 database.db < tests/fixtures/sqlite_schema.sql
 
       - name: Setup DynamoDB
         if: "matrix.app_manager == 'dynamodb'"
