@@ -91,6 +91,9 @@ export class Server {
                 table: 'apps',
                 version: '13.3',
             },
+            sqlite: {
+                table: 'apps',
+            },
         },
         cache: {
             driver: 'memory',
@@ -148,6 +151,9 @@ export class Server {
                 user: 'postgres',
                 password: 'password',
                 database: 'main',
+            },
+            sqlite: {
+                filename: './database.db',
             },
             redis: {
                 host: '127.0.0.1',

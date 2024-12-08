@@ -34,6 +34,10 @@ interface KnexConnection {
     database: string;
 }
 
+interface SQLiteConnection {
+    filename: string;
+}
+
 export interface Options {
     adapter: {
         driver: string;
@@ -81,6 +85,9 @@ export interface Options {
             table: string;
             version: string|number;
         };
+        sqlite: {
+            table: string;
+        };
     };
     cache: {
         driver: string;
@@ -115,6 +122,7 @@ export interface Options {
     database: {
         mysql: KnexConnection;
         postgres: KnexConnection;
+        sqlite: SQLiteConnection;
         redis: Redis;
     };
     databasePooling: {

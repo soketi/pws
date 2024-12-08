@@ -16,6 +16,7 @@ RUN apk add --no-cache --update git python3 gcompat ; \
     npm ci ; \
     npm run build ; \
     npm ci --omit=dev --ignore-scripts ; \
+    cd node_modules/sqlite3 && npm run rebuild && cd ../.. ; \
     npm prune --production ; \
     rm -rf node_modules/*/test/ node_modules/*/tests/ ; \
     npm install -g modclean ; \
