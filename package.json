@@ -25,7 +25,7 @@
     "arraybuffer-to-string": "^1.0.2",
     "async": "^3.2.4",
     "aws-sdk": "^2.1426.0",
-    "axios": "^0.27.2",
+    "axios": "^1.7.9",
     "boolean": "^3.1.4",
     "bullmq": "^1.80.3",
     "colors": "1.4.0",
