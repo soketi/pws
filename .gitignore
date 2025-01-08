@@ -9,3 +9,5 @@ config.json
 npm-debug.log
 yarn.lock
 *.db
+
+.idea
