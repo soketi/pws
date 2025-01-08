@@ -1,6 +1,7 @@
 ARG VERSION=lts
 
-FROM --platform=$BUILDPLATFORM node:$VERSION-alpine as build
+FROM --platform=$BUILDPLATFORM node:$VERSION-alpine AS build
+
 
 ENV PYTHONUNBUFFERED=1
 
@@ -23,7 +24,8 @@ RUN apk add --no-cache --update git python3 gcompat ; \
     mkdir -p /app ; \
     cp -r bin/ dist/ node_modules/ LICENSE package.json package-lock.json README.md /app/
 
-FROM --platform=$TARGETPLATFORM node:$VERSION-alpine
+FROM node:$VERSION-alpine
+ARG TARGETPLATFORM
 
 LABEL org.opencontainers.image.authors="Soketi <open-source@soketi.app>"
 LABEL org.opencontainers.image.source="https://github.com/soketi/soketi"
