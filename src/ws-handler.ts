@@ -13,8 +13,8 @@ import { Server } from './server';
 import { Utils } from './utils';
 import { WebSocket } from 'uWebSockets.js';
 
-const ab2str = require('arraybuffer-to-string');
-const Pusher = require('pusher');
+import ab2str from 'arraybuffer-to-string';
+import Pusher from 'pusher';
 
 export class WsHandler {
     /**
@@ -78,6 +78,14 @@ export class WsHandler {
         ws.id = this.generateSocketId();
         ws.subscribedChannels = new Set();
         ws.presence = new Map<string, PresenceMemberInfo>();
+
+        // Send immediate socket ID response on connection
+        ws.sendJson({
+            event: 'socket_id',
+            data: {
+                socket_id: ws.id
+            }
+        });
 
         if (this.server.closing) {
             ws.sendJson({
@@ -290,7 +298,9 @@ export class WsHandler {
     handlePong(ws: WebSocket): any {
         ws.sendJson({
             event: 'pusher:pong',
-            data: {},
+            data: {
+                socket_id: ws.id
+            },
         });
 
         if (this.server.closing) {
